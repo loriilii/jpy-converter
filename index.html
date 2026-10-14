@@ -8,6 +8,7 @@
         :root {
             --primary-color: #2c3e50;
             --accent-color: #3498db;
+            --fixed-color: #e67e22;
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
             --text-color: #333333;
@@ -19,7 +20,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,7 +37,7 @@
         }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             text-align: center;
             margin-bottom: 20px;
             color: var(--primary-color);
@@ -57,12 +58,14 @@
         input[type="number"] {
             width: 100%;
             padding: 12px;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
+            font-weight: bold;
             border: 2px solid var(--border-color);
             border-radius: 8px;
             box-sizing: border-box;
             outline: none;
             transition: border-color 0.2s;
+            color: var(--primary-color);
         }
 
         input[type="number"]:focus {
@@ -70,13 +73,13 @@
         }
 
         .rate-settings {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .rate-box {
-            flex: 1;
             background: #f1f4f8;
             padding: 10px 12px;
             border-radius: 8px;
@@ -85,24 +88,40 @@
 
         .rate-box label {
             margin-bottom: 4px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #666;
         }
 
-        .rate-box input {
+        /* 唯讀的即期匯率樣式 */
+        .rate-box input.readonly-rate {
             width: 100%;
             padding: 6px;
             font-size: 1rem;
+            font-weight: bold;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: #e9ecef;
+            color: #495057;
+            cursor: not-allowed;
+        }
+
+        /* 可手動改的固定匯率樣式 */
+        .rate-box input.editable-rate {
+            width: 100%;
+            padding: 6px;
+            font-size: 1rem;
+            font-weight: bold;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             background: #fff;
+            color: var(--primary-color);
         }
 
         .results {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .result-card {
@@ -113,7 +132,8 @@
         }
 
         .result-card.fixed {
-            border-left-color: #e67e22;
+            border-left-color: var(--fixed-color);
+            background: #fffdf9;
         }
 
         .result-title {
@@ -129,13 +149,13 @@
         }
 
         .table-container {
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .table-title {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: var(--primary-color);
         }
 
@@ -146,7 +166,7 @@
         }
 
         th, td {
-            padding: 10px 12px;
+            padding: 8px 10px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
@@ -165,14 +185,14 @@
             font-size: 0.75rem;
             text-align: center;
             color: #888;
-            margin-top: 16px;
+            margin-top: 14px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🇯🇵 日幣 ⇄ 台幣 換算器</h1>
+    <h1>🇯🇵 日幣台幣快速換算</h1>
 
     <!-- 輸入日幣金額 -->
     <div class="input-group">
@@ -183,30 +203,31 @@
     <!-- 匯率設定區 -->
     <div class="rate-settings">
         <div class="rate-box">
-            <label for="spotRateInput">1. 即期匯率 (TWD/JPY)</label>
-            <input type="number" id="spotRateInput" step="0.0001" value="0.2150">
+            <label for="spotRateInput">1. 即期匯率 (自動更新)</label>
+            <!-- 加入 readonly 屬性，無法手動更改 -->
+            <input type="number" id="spotRateInput" class="readonly-rate" value="0.2150" readonly tabindex="-1">
         </div>
         <div class="rate-box">
             <label for="fixedRateInput">2. 固定匯率</label>
-            <input type="number" id="fixedRateInput" step="0.0001" value="0.2300">
+            <input type="number" id="fixedRateInput" class="editable-rate" step="0.0001" value="0.2300">
         </div>
     </div>
 
     <!-- 換算結果區 -->
     <div class="results">
         <div class="result-card">
-            <div class="result-title">即期匯率換算台幣</div>
+            <div class="result-title">即期匯率換算</div>
             <div class="result-value" id="spotResult">NT$ 0.00</div>
         </div>
         <div class="result-card fixed">
-            <div class="result-title">固定匯率 (0.23) 換算台幣</div>
+            <div class="result-title">固定匯率 (0.23) 換算</div>
             <div class="result-value" id="fixedResult">NT$ 0.00</div>
         </div>
     </div>
 
-    <!-- 固定對照表 (依即期匯率) -->
+    <!-- 固定對照表 (100, 1000, 10000, 100000) -->
     <div class="table-container">
-        <div class="table-title">常用即期金額對照表</div>
+        <div class="table-title">常用金額對照表 (依即期匯率)</div>
         <table>
             <thead>
                 <tr>
@@ -220,7 +241,7 @@
         </table>
     </div>
 
-    <div class="status-text" id="statusText">正在自動取得最新即期匯率...</div>
+    <div class="status-text" id="statusText">正在自動連線取得最新即期匯率...</div>
 </div>
 
 <script>
@@ -232,23 +253,22 @@
     const refTableBody = document.getElementById('refTableBody');
     const statusText = document.getElementById('statusText');
 
-    // 自動抓取即期匯率 (使用開源 API: ExchangeRate-API)
+    // 自動抓取即期匯率
     async function fetchExchangeRate() {
         try {
             const response = await fetch('https://open.er-api.com/v6/latest/JPY');
             const data = await response.json();
             if (data && data.rates && data.rates.TWD) {
-                // TWD 代表 1 JPY 可以兌換多少 TWD
                 const rate = data.rates.TWD;
                 spotRateInput.value = rate.toFixed(4);
-                statusText.innerText = `已自動更新最新即期匯率 (更新時間: ${data.time_last_update_utc.slice(0, 16)})`;
+                statusText.innerText = `已自動更新即期匯率 (${data.time_last_update_utc.slice(0, 10)})`;
                 calculate();
             } else {
                 throw new Error('API 格式錯誤');
             }
         } catch (error) {
-            console.error('無法取得即期匯率:', error);
-            statusText.innerText = '無法自動取得匯率，已使用預設值，可手動修改';
+            console.error('無法取得匯率:', error);
+            statusText.innerText = '無法自動取得最新匯率，目前使用預設防呆值';
             calculate();
         }
     }
@@ -259,14 +279,14 @@
         const spotRate = parseFloat(spotRateInput.value) || 0;
         const fixedRate = parseFloat(fixedRateInput.value) || 0.23;
 
-        // 計算結果
+        // 計算台幣金額 (無手續費外加)
         const spotTwd = jpy * spotRate;
         const fixedTwd = jpy * fixedRate;
 
-        spotResult.innerText = `NT$ ${spotTwd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        fixedResult.innerText = `NT$ ${fixedTwd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        spotResult.innerText = `NT$ ${spotTwd.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+        fixedResult.innerText = `NT$ ${fixedTwd.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
 
-        // 更新對照表 (100, 1000, 10000, 100000)
+        // 更新固定對照表 (100 / 1000 / 10000 / 100000)
         const refAmounts = [100, 1000, 10000, 100000];
         refTableBody.innerHTML = '';
         refAmounts.forEach(amount => {
@@ -282,8 +302,7 @@
 
     // 監聽輸入事件
     jpyInput.addEventListener('input', calculate);
-    spotRateInput.addEventListener('input', calculate);
-    fixedRateInput.addEventListener('input', calculate);
+    fixedRateInput.addEventListener('input', calculate); // 只有固定匯率允許手動修改並觸發重算
 
     // 初始化執行
     fetchExchangeRate();
