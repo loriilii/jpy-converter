@@ -257,3 +257,69 @@
     if (savedFixedRate) {
         fixedRateInput.value = savedFixedRate;
     }
+
+    // 自動抓取即期匯率
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('https://open.er-api.com/v6/latest/JPY');
+            const data = await response.json();
+            if (data && data.rates && data.rates.TWD) {
+                const rate = data.rates.TWD;
+                spotRateInput.value = rate.toFixed(4);
+                statusText.innerText = `已自動更新即期匯率 (${data.time_last_update_utc.slice(0, 10)})`;
+                calculate();
+            } else {
+                throw new Error('API 格式錯誤');
+            }
+        } catch (error) {
+            console.error('無法取得匯率:', error);
+            statusText.innerText = '無法自動取得最新匯率，目前使用預設防呆值';
+            calculate();
+        }
+    }
+
+    // 計算邏輯
+    function calculate() {
+        const jpy = parseFloat(jpyInput.value) || 0;
+        const spotRate = parseFloat(spotRateInput.value) || 0;
+        const fixedRate = parseFloat(fixedRateInput.value) || 0.23;
+
+        // 計算台幣金額
+        const spotTwd = jpy * spotRate;
+        const fixedTwd = jpy * fixedRate;
+
+        spotResult.innerText = `NT$ ${spotTwd.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+        fixedResult.innerText = `NT$ ${fixedTwd.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+        
+        // 更新固定匯率卡片的標題顯示當前數值
+        document.querySelector('.result-card.fixed .result-title').innerText = `固定匯率 (${fixedRate}) 換算`;
+
+        // 更新固定對照表 (100 / 1000 / 10000 / 100000)
+        const refAmounts = [100, 1000, 10000, 100000];
+        refTableBody.innerHTML = '';
+        refAmounts.forEach(amount => {
+            const converted = amount * spotRate;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>¥ ${amount.toLocaleString()}</td>
+                <td>NT$ ${converted.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+            `;
+            refTableBody.appendChild(row);
+        });
+    }
+
+    // 監聽日幣金額輸入
+    jpyInput.addEventListener('input', calculate);
+
+    // 監聽固定匯率變更：只要一修改，立刻存入 localStorage 幫忙記憶
+    fixedRateInput.addEventListener('input', () => {
+        localStorage.setItem('userFixedRate', fixedRateInput.value);
+        calculate();
+    });
+
+    // 初始化執行
+    fetchExchangeRate();
+</script>
+
+</body>
+</html>
