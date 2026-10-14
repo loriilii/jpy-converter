@@ -204,7 +204,6 @@
     <div class="rate-settings">
         <div class="rate-box">
             <label for="spotRateInput">1. 即期匯率 (自動更新)</label>
-            <!-- 加入 readonly 屬性，無法手動更改 -->
             <input type="number" id="spotRateInput" class="readonly-rate" value="0.2150" readonly tabindex="-1">
         </div>
         <div class="rate-box">
@@ -220,7 +219,7 @@
             <div class="result-value" id="spotResult">NT$ 0.00</div>
         </div>
         <div class="result-card fixed">
-            <div class="result-title">固定匯率 (0.23) 換算</div>
+            <div class="result-title">固定匯率換算</div>
             <div class="result-value" id="fixedResult">NT$ 0.00</div>
         </div>
     </div>
@@ -253,6 +252,12 @@
     const refTableBody = document.getElementById('refTableBody');
     const statusText = document.getElementById('statusText');
 
+    // 1. 初始化：載入網頁時，先檢查瀏覽器有沒有存過固定匯率，有就帶入，沒有才用預設 0.23
+    const savedFixedRate = localStorage.getItem('userFixedRate');
+    if (savedFixedRate) {
+        fixedRateInput.value = savedFixedRate;
+    }
+
     // 自動抓取即期匯率
     async function fetchExchangeRate() {
         try {
@@ -279,12 +284,15 @@
         const spotRate = parseFloat(spotRateInput.value) || 0;
         const fixedRate = parseFloat(fixedRateInput.value) || 0.23;
 
-        // 計算台幣金額 (無手續費外加)
+        // 計算台幣金額
         const spotTwd = jpy * spotRate;
         const fixedTwd = jpy * fixedRate;
 
         spotResult.innerText = `NT$ ${spotTwd.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
         fixedResult.innerText = `NT$ ${fixedTwd.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+        
+        // 更新固定匯率卡片的標題顯示當前數值
+        document.querySelector('.result-card.fixed .result-title').innerText = `固定匯率 (${fixedRate}) 換算`;
 
         // 更新固定對照表 (100 / 1000 / 10000 / 100000)
         const refAmounts = [100, 1000, 10000, 100000];
@@ -300,9 +308,14 @@
         });
     }
 
-    // 監聽輸入事件
+    // 監聽日幣金額輸入
     jpyInput.addEventListener('input', calculate);
-    fixedRateInput.addEventListener('input', calculate); // 只有固定匯率允許手動修改並觸發重算
+
+    // 監聽固定匯率變更：只要一修改，立刻存入 localStorage 幫忙記憶
+    fixedRateInput.addEventListener('input', () => {
+        localStorage.setItem('userFixedRate', fixedRateInput.value);
+        calculate();
+    });
 
     // 初始化執行
     fetchExchangeRate();
